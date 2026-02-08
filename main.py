@@ -132,7 +132,7 @@ target_test_dataset = CoordDataset(config.TARGET_DOMAIN, TRANSFORM, mode='testin
 BATCH_SIZE = 2
 train_loader_S = torch.utils.data.DataLoader(source_dataset, batch_size=BATCH_SIZE,shuffle=True)#, pin_memory=True, num_workers=64)
 train_loader_T = torch.utils.data.DataLoader(target_dataset, batch_size=BATCH_SIZE,shuffle=True)#, pin_memory=True, num_workers=64)
-test_loader_T = torch.utils.data.DataLoader(test_dataset, batch_size=16,shuffle=True)#, pin_memory=True, num_workers=64)
+test_loader_T = torch.utils.data.DataLoader(target_test_dataset, batch_size=16,shuffle=True)#, pin_memory=True, num_workers=64)
 
 def read_image(path):
     img = cv2.imread(path)
