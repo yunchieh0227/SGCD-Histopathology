@@ -185,7 +185,8 @@ model save at AUC = 0.925
     *   `CycelDiffusion_Camelyon17_XnY_0726.pth` (其中 `XnY` 會替換為您設定的 `SOURCE_DOMAIN` 和 `TARGET_DOMAIN`)
     *   這是訓練完成且在目標測試集上達到最佳 AUC 的目標領域分類器模型（其 `state_dict`）。
 
-```@inproceedings{
+```bibtex
+@inproceedings{
 chen2025sgcd,
 title={{SGCD}: Stain-Guided CycleDiffusion for Unsupervised Domain Adaptation of Histopathology Image Classification},
 author={Hsi-Ling Chen and Chun-Shien Lu and Pau-Choo Chung},

@@ -185,7 +185,8 @@ After training is complete or during the training process, the following files a
     *   `CycelDiffusion_Camelyon17_XnY_0726.pth` (where `XnY` will be replaced by your configured `SOURCE_DOMAIN` and `TARGET_DOMAIN`)
     *   This is the target domain classifier model (its `state_dict`) that completed training and achieved the best AUC on the target test set.
 
-```@inproceedings{
+```bibtex
+@inproceedings{
 chen2025sgcd,
 title={{SGCD}: Stain-Guided CycleDiffusion for Unsupervised Domain Adaptation of Histopathology Image Classification},
 author={Hsi-Ling Chen and Chun-Shien Lu and Pau-Choo Chung},
@@ -193,3 +194,4 @@ booktitle={The Thirty-ninth Annual Conference on Neural Information Processing S
 year={2025},
 url={https://openreview.net/forum?id=z2SGaPIhLT}
 }
+```
