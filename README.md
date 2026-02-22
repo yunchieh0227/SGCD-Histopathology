@@ -1,9 +1,8 @@
 # Domain Adaptation for Histopathology Image Classification using Cycle Diffusion Model
 Official implementation of NIPS 2025 spotlight paper, SGCD: Stain-Guided CycleDiffusion for Unsupervised Domain Adaptation of Histopathology Image Classification
 
-This project utilizes the Cycle Diffusion model for domain adaptation of CAMELYON17 histopathology images. The core idea is to transform the image style of one domain (e.g., scanned by one hospital) to another domain (another hospital's scanning style), while preserving its pathological content (e.g., normal or tumor cells), thereby improving the model's generalization ability across different data sources.
-
-This project also integrates the Vahadane stain normalization algorithm as guidance for the diffusion process, to more precisely control the transformation of staining styles.
+Abstract:                                                                                               
+The effectiveness of domain translation in addressing image-based problems of Unsupervised Domain Adaptation (UDA) depends on the quality of the translated images and the preservation of crucial discriminative features. However, achieving high-quality and stable translations typically requires paired data, which poses a challenge in scenarios with limited annotations in the target domain. To address this issue, this paper proposes a novel method termed Stain-Guided Cycle Diffusion (SGCD), employing a dual diffusion model with bidirectional generative constraints to synthesize highly realistic data for downstream task fine-tuning. The bidirectional generative constraints ensure that the translated images retain the features critical to the downstream model in properly controlling the generation process. Additionally, a stain-guided consistency loss is introduced to enhance the denoising capability of the dual diffusion model, thereby improving the quality of images translated between different domains using latents from one domain and a diffusion model trained on another. Experiments conducted on four public datasets demonstrate that SGCD can effectively enhance the performance of downstream task models on the target domain.
 
 ## 1. Environment Setup
 

@@ -1,9 +1,13 @@
 # 使用循環擴散模型進行組織病理學圖像領域適應
 Official implementation of NIPS 2025 spotlight paper, SGCD: Stain-Guided CycleDiffusion for Unsupervised Domain Adaptation of Histopathology Image Classification
 
-本專案利用循環擴散模型（Cycle Diffusion）對 CAMELYON17 組織病理學圖像進行領域適應。其核心思想是將一個領域（例如，由某家醫院掃描）的圖像風格轉換為另一個領域（另一家醫院的掃描風格），同時保留其病理學內容（如正常或腫瘤細胞），從而提升模型在不同資料來源下的泛化能力。
+在處理影像型的無監督領域適應（Unsupervised Domain Adaptation, UDA）問題時，領域轉換（domain translation）的效果取決於生成影像的品質，以及是否能保留關鍵的判別特徵。然而，要實現高品質且穩定的影像轉換，通常需要成對（paired）的資料，這在目標領域標註有限的情況下會造成困難。
 
-此專案還整合了 Vahadane 染色歸一化算法作為擴散過程的引導，以更精確地控制染色風格的轉換。
+為了解決此問題，本文提出一種新方法，稱為 Stain-Guided Cycle Diffusion（SGCD）。該方法採用一個具有雙向生成約束的雙擴散模型（dual diffusion model），以合成高度真實的資料，用於下游任務的微調（fine-tuning）。雙向生成約束能夠在控制生成過程的同時，確保轉換後的影像保留對下游模型至關重要的特徵。
+
+此外，本文還引入了一種染色引導一致性損失（stain-guided consistency loss），以增強雙擴散模型的去噪能力，從而提升跨領域影像轉換的品質。該方法能夠使用來自一個領域的潛在表示（latents），搭配在另一個領域上訓練的擴散模型，實現高品質的影像轉換。
+
+在四個公開資料集上的實驗結果顯示，SGCD 能有效提升目標領域中下游任務模型的性能。
 
 ## 1. 環境建置
 
