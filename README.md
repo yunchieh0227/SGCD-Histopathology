@@ -1,24 +1,25 @@
-# 使用循環擴散模型進行組織病理學圖像領域適應
+# Domain Adaptation for Histopathology Image Classification using Cycle Diffusion Model
+Official implementation of NIPS 2025 spotlight paper, SGCD: Stain-Guided CycleDiffusion for Unsupervised Domain Adaptation of Histopathology Image Classification
 
-本專案利用循環擴散模型（Cycle Diffusion）對 CAMELYON17 組織病理學圖像進行領域適應。其核心思想是將一個領域（例如，由某家醫院掃描）的圖像風格轉換為另一個領域（另一家醫院的掃描風格），同時保留其病理學內容（如正常或腫瘤細胞），從而提升模型在不同資料來源下的泛化能力。
+This project utilizes the Cycle Diffusion model for domain adaptation of CAMELYON17 histopathology images. The core idea is to transform the image style of one domain (e.g., scanned by one hospital) to another domain (another hospital's scanning style), while preserving its pathological content (e.g., normal or tumor cells), thereby improving the model's generalization ability across different data sources.
 
-此專案還整合了 Vahadane 染色歸一化算法作為擴散過程的引導，以更精確地控制染色風格的轉換。
+This project also integrates the Vahadane stain normalization algorithm as guidance for the diffusion process, to more precisely control the transformation of staining styles.
 
-## 1. 環境建置
+## 1. Environment Setup
 
-建議使用 `conda` 或 `venv` 建立一個獨立的 Python 虛擬環境，以避免套件版本衝突。
+It is recommended to use `conda` or `venv` to create an independent Python virtual environment to avoid package version conflicts.
 
 ```bash
-# 使用 conda 建立新環境 (推薦)
+# Create a new environment using conda (recommended)
 conda create -n cycle_diffusion python=3.8
 conda activate cycle_diffusion
 ```
 
-### 安裝依賴套件
+### Install Dependencies
 
-您可以將以下內容儲存為 `requirements.txt` 檔案，然後執行 `pip install -r requirements.txt` 來安裝所有必要的函式庫。
+You can save the following content as a `requirements.txt` file and then run `pip install -r requirements.txt` to install all necessary libraries.
 
-**`requirements.txt` 內容:**
+**`requirements.txt` content:**
 ```
 torch>=1.10.0
 torchvision>=0.11.0
@@ -33,64 +34,64 @@ Pillow>=9.0.0
 spams
 ```
 
-**安裝指令:**
+**Installation command:**
 ```bash
 pip install -r requirements.txt
 ```
 
-**注意：**
-*   `torch` 和 `torchvision` 的版本應與您的 CUDA 版本相匹配。請參考 [PyTorch 官網](https://pytorch.org/get-started/locally/) 的安裝指南。
-*   `spams` 函式庫可能較難安裝。如果 `pip` 安裝失敗，強烈建議使用 `conda` 來安裝：
+**Note:**
+*   The versions of `torch` and `torchvision` should match your CUDA version. Please refer to the [PyTorch official website](https://pytorch.org/get-started/locally/) for installation guides.
+*   The `spams` library might be difficult to install. If `pip` installation fails, it is highly recommended to install it using `conda`:
     ```bash
     conda install -c conda-forge spams
     ```
 
-## 2. 資料與預訓練模型準備
+## 2. Data and Pre-trained Model Preparation
 
-### a. 資料集準備
+### a. Dataset Preparation
 
-本專案使用 **CAMELYON17** 資料集，並且需要將其預處理為圖像塊（patches）。
+This project uses the **CAMELYON17** dataset and requires it to be preprocessed into image patches.
 
-1.  **資料類型**：您需要準備好 `96x96` 或 `256x256` 尺寸的圖像塊（根據 `main.py` 中的 `IMG_SIZE` 和 `TrainingConfig.image_size` 設定而定），檔案格式為 `.png` 或 `.jpg`。請確保圖像解析度與程式碼中的設定一致。
-2.  **資料夾結構**：請依照以下結構組織您的資料。您需要為不同的「中心」（domain）建立對應的資料夾。
+1.  **Data Type**: You need to prepare image patches of `96x96` or `256x256` dimensions (depending on `IMG_SIZE` and `TrainingConfig.image_size` settings in `main.py`), in `.png` or `.jpg` format. Please ensure that the image resolution matches the settings in the code.
+2.  **Folder Structure**: Please organize your data according to the following structure. You need to create corresponding folders for different "centers" (domains).
     ```
-    <您的資料根目錄>/
-    └── center_X_patches_CL0_RL5_256/       # X 是 domain ID, 例如 4 或 5
+    <Your data root directory>/
+    └── center_X_patches_CL0_RL5_256/       # X is domain ID, e.g., 4 or 5
         ├── training/
-        │   ├── training/                   # 訓練集
-        │   │   ├── n_..._patch.png        # 'n' 代表正常細胞圖像塊
-        │   │   └── t_..._patch.png        # 't' 代表腫瘤細胞圖像塊
-        │   └── validation/                 # 驗證集
+        │   ├── training/                   # Training set
+        │   │   ├── n_..._patch.png        # 'n' represents normal cell image patches
+        │   │   └── t_..._patch.png        # 't' represents tumor cell image patches
+        │   └── validation/                 # Validation set
         │       ├── n_..._patch.png
         │       └── t_..._patch.png
-        └── testing/                        # 測試集
+        └── testing/                        # Test set
             ├── n_..._patch.png
             └── t_..._patch.png
     ```
 
-3.  **修改程式碼路徑**：
-    打開 `main.py` 檔案，找到 `CoordDataset` 類別的 `__init__` 方法，並將 `root_path` 變數修改為您自己的資料根目錄路徑。
+3.  **Modify Code Path**:
+    Open the `main.py` file, find the `__init__` method of the `CoordDataset` class, and modify the `root_path` variable to your own data root directory path.
 
-    **原始程式碼行 (在 `CoordDataset` 類別內):**
+    **Original code line (within `CoordDataset` class):**
     ```python
-    root_path = '/work/twsxuaj274/CAMELYON17_temp/center_'+str(domain)+'_patches_CL0_RL5_256/'+folder
+    root_path = '/work/CAMELYON17_temp/center_'+str(domain)+'_patches_CL0_RL5_256/'+folder
     ```
-    **修改後範例 (請替換為您的實際路徑，例如 `/home/user/my_camelyon_data`):**
+    **Modified example (please replace with your actual path, e.g., `/home/user/my_camelyon_data`):**
     ```python
     root_path = '/path/to/your/camelyon17_data/center_'+str(domain)+'_patches_CL0_RL5_256/'+folder
     ```
-    **注意:** `main.py` 中 `IMG_SIZE` 變數設定為 96，但資料夾名稱包含 `256`。請確保您的圖像塊實際尺寸與程式碼中使用的 `IMG_SIZE` 和 `transforms.Resize` 設定一致。
+    **Note**: The `IMG_SIZE` variable in `main.py` is set to 96, but the folder name contains `256`. Please ensure that your image patch actual dimensions are consistent with the `IMG_SIZE` and `transforms.Resize` settings used in the code.
 
-### b. 預訓練模型準備
+### b. Pre-trained Model Preparation
 
-腳本在開始訓練前需要載入預訓練好的**分類器**和**擴散模型**。
+The script needs to load pre-trained **classifiers** and **diffusion models** before starting training.
 
-1.  **所需檔案和資料夾**：
-    *   **分類器模型**：`CAMELYON17_domain_X_resnet.pt` (其中 `X` 是 domain ID，例如 4 或 5)。
-    *   **擴散模型**：一個名為 `ddpm_CAMELYON17/domain_X/` 的資料夾，其中包含 `model_index.json`, `scheduler/` 和 `unet/` 等子目錄和檔案。這些是 Hugging Face `diffusers` 庫所使用的模型儲存格式。
+1.  **Required Files and Folders**:
+    *   **Classifier Model**: `CAMELYON17_domain_X_resnet.pt` (where `X` is the domain ID, e.g., 4 or 5).
+    *   **Diffusion Model**: A folder named `ddpm_CAMELYON17/domain_X/`, which contains subdirectories and files such as `model_index.json`, `scheduler/`, and `unet/`. These are the model storage formats used by the Hugging Face `diffusers` library.
 
-2.  **存放位置**：
-    請將這些預訓練模型檔案和資料夾放置在**專案的根目錄**下，與 `main.py` 位於同一層級。例如：
+2.  **Storage Location**:
+    Please place these pre-trained model files and folders in the **project's root directory**, at the same level as `main.py`. For example:
 
     ```
     your_project_root/
@@ -109,57 +110,57 @@ pip install -r requirements.txt
             ├── scheduler/
             └── unet/
     ```
-    如果您目前的預訓練模型存放位置不同，請相應修改 `main.py` 中載入這些模型的路徑。
+    If your current pre-trained model storage location is different, please modify the paths for loading these models in `main.py` accordingly.
 
-## 3. 如何運行模型
+## 3. How to Run the Model
 
-### a. 配置 `accelerate`
+### a. Configure `accelerate`
 
-在第一次運行前，您需要配置 `accelerate` 以匹配您的硬體環境（例如使用的 GPU 數量、是否啟用混合精度等）。在終端機中執行以下指令：
+Before the first run, you need to configure `accelerate` to match your hardware environment (e.g., number of GPUs used, whether mixed precision is enabled). Run the following command in the terminal:
 
 ```bash
 accelerate config
 ```
 
-系統會提出一系列問題。請根據您的實際情況進行選擇。對於單機單 GPU 的基本設定，您可以參考以下範例回答：
+The system will ask a series of questions. Please select according to your actual situation. For a basic setup with a single machine and single GPU, you can refer to the following example answers:
 
 *   `In which compute environment are you running?`: `This machine`
 *   `Which type of machine are you using?`: `No distributed training`
 *   `Do you want to run your training on CPU?`: `NO`
 *   `Do you want to use DeepSpeed?`: `NO`
 *   `How many GPUs do you wish to use?`: `1`
-*   `Do you wish to use FP16 or BF16 (mixed precision)?`: `no` (或根據您的 GPU 能力和需求選擇 `fp16` 或 `bf16`)
+*   `Do you wish to use FP16 or BF16 (mixed precision)?`: `no` (or choose `fp16` or `bf16` according to your GPU capabilities and needs)
 
-### b. 調整訓練參數
+### b. Adjust Training Parameters
 
-您可以直接在 `main.py` 中修改 `TrainingConfig` 類別的屬性來調整訓練參數，例如：
+You can directly modify the attributes of the `TrainingConfig` class in `main.py` to adjust training parameters, such as:
 
-*   `SOURCE_DOMAIN`：設定源領域的 ID (例如 `5`)。
-*   `TARGET_DOMAIN`：設定目標領域的 ID (例如 `4`)。
-*   `num_epochs`：訓練的總輪數。
-*   `learning_rate`：學習率。
-*   `T`：擴散過程的時間步長。
-*   `guide_until`：擴散引導在多少時間步之前停止。
-*   `mini_batch`：每次 epoch 訓練的 mini-batch 數量 (注意：這與 `BATCH_SIZE` 不同，`BATCH_SIZE` 是每個 mini-batch 的樣本數)。
+*   `SOURCE_DOMAIN`: Set the ID of the source domain (e.g., `5`).
+*   `TARGET_DOMAIN`: Set the ID of the target domain (e.g., `4`).
+*   `num_epochs`: Total number of training epochs.
+*   `learning_rate`: Learning rate.
+*   `T`: Timestep for the diffusion process.
+*   `guide_until`: Diffusion guidance stops before how many timesteps.
+*   `mini_batch`: Number of mini-batches trained per epoch (Note: This is different from `BATCH_SIZE`, which is the number of samples per mini-batch).
 
-### c. 啟動訓練
+### c. Start Training
 
-完成 `accelerate` 配置和所有路徑修改後，請在專案根目錄下，於您啟用的虛擬環境中，使用以下指令來啟動訓練：
+After completing `accelerate` configuration and all path modifications, in the project root directory, within your activated virtual environment, use the following command to start training:
 
 ```bash
 accelerate launch main.py
 ```
 
-## 4. 預期結果
+## 4. Expected Results
 
-模型成功運行後，您會看到以下產出：
+After the model runs successfully, you will see the following outputs:
 
-### a. 終端機輸出
+### a. Terminal Output
 
-*   **進度條**：`tqdm` 會顯示每個 epoch 的訓練進度。
-*   **損失值**：會顯示 `noise loss` (重建損失)、`CE loss` (分類損失) 等指標。
-*   **評估結果**：在每個測試週期（由 `config.test_epochs` 控制），會打印出模型在目標測試集上的 `Accuracy` (準確率) 和 `ROC AUC`。
-*   **模型保存信息**：當模型在測試集上的 AUC 達到新的最佳值時，會顯示保存模型的訊息。
+*   **Progress Bar**: `tqdm` will display the training progress for each epoch.
+*   **Loss Values**: `noise loss` (reconstruction loss), `CE loss` (classification loss), and other metrics will be displayed.
+*   **Evaluation Results**: During each test cycle (controlled by `config.test_epochs`), the `Accuracy` and `ROC AUC` of the model on the target test set will be printed.
+*   **Model Save Information**: When the model's AUC on the test set reaches a new best value, a message indicating the model save will be displayed.
 
 ```
 training epoch 0 time step is 30 guide until 10 mode D
@@ -170,16 +171,25 @@ ROC AUC: 0.925
 model save at AUC = 0.925
 ```
 
-### b. 生成的檔案
+### b. Generated Files
 
-訓練完成或在訓練過程中，會在專案根目錄下生成以下檔案和資料夾：
+After training is complete or during the training process, the following files and folders will be generated in the project root directory:
 
-*   **擴散模型輸出目錄**：
-    *   `ddpm_CAMELYON17/domain_XnY_X/` (例如 `ddpm_CAMELYON17/domain_5n4_5/`)
-    *   `ddpm_CAMELYON17/domain_XnY_Y/` (例如 `ddpm_CAMELYON17/domain_5n4_4/`)
-    *   這些目錄中包含訓練好的擴散模型（UNet、Scheduler 等），它們是 `DDPMPipeline` 的格式，可用於後續的推理或生成任務。
-    *   每個目錄內還會有一個 `samples/` 子資料夾，其中包含訓練過程中生成的樣本圖像 (`recon.png`)，用於視覺化擴散和領域適應的效果。
+*   **Diffusion Model Output Directory**:
+    *   `ddpm_CAMELYON17/domain_XnY_X/` (e.g., `ddpm_CAMELYON17/domain_5n4_5/`)
+    *   `ddpm_CAMELYON17/domain_XnY_Y/` (e.g., `ddpm_CAMELYON17/domain_5n4_4/`)
+    *   These directories contain the trained diffusion models (UNet, Scheduler, etc.), which are in the `DDPMPipeline` format and can be used for subsequent inference or generation tasks.
+    *   Each directory will also have a `samples/` subdirectory, containing sample images (`recon.png`) generated during training, used for visualizing the effects of diffusion and domain adaptation.
 
-*   **最佳分類器模型**：
-    *   `CycelDiffusion_Camelyon17_XnY_0726.pth` (其中 `XnY` 會替換為您設定的 `SOURCE_DOMAIN` 和 `TARGET_DOMAIN`)
-    *   這是訓練完成且在目標測試集上達到最佳 AUC 的目標領域分類器模型（其 `state_dict`）。
+*   **Best Classifier Model**:
+    *   `CycelDiffusion_Camelyon17_XnY_0726.pth` (where `XnY` will be replaced by your configured `SOURCE_DOMAIN` and `TARGET_DOMAIN`)
+    *   This is the target domain classifier model (its `state_dict`) that completed training and achieved the best AUC on the target test set.
+
+```@inproceedings{
+chen2025sgcd,
+title={{SGCD}: Stain-Guided CycleDiffusion for Unsupervised Domain Adaptation of Histopathology Image Classification},
+author={Hsi-Ling Chen and Chun-Shien Lu and Pau-Choo Chung},
+booktitle={The Thirty-ninth Annual Conference on Neural Information Processing Systems},
+year={2025},
+url={https://openreview.net/forum?id=z2SGaPIhLT}
+}

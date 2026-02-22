@@ -62,7 +62,7 @@ class CoordDataset(Dataset):
         self.files = []
         self.labels = []
         self.transform = transform
-        root_path = '/work/twsxuaj274/CAMELYON17_temp/center_'+str(domain)+'_patches_CL0_RL5_256/'+folder
+        root_path = '/work/CAMELYON17_temp/center_'+str(domain)+'_patches_CL0_RL5_256/'+folder
         files = listdir(root_path)
         for f in files:
             fullpath = join(root_path, f)
